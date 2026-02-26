@@ -11,7 +11,7 @@
     "gtm-mcp-server": "./dist/index.js"
   },
   "scripts": {
-    "build": "tsc",
+    "build": "npx tsc",
     "start": "node dist/index.js",
     "dev": "npx tsx src/index.ts"
   },
