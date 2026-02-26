@@ -4,49 +4,28 @@ Self-hosted MCP server for Google Tag Manager. Forked from [Stape's GTM MCP](htt
 
 All GTM API calls go directly to Google — no third-party proxy.
 
-## Setup
+## Team Setup (on our server)
 
-### 1. Create a GCP Service Account
+The production build lives at `/home/tay/projects/gtm-mcp/` and auto-deploys when `main` is pushed via the GitHub webhook sync.
 
-1. Go to [GCP Console > IAM > Service Accounts](https://console.cloud.google.com/iam-admin/serviceaccounts)
-2. Create a service account (or use an existing one)
-3. Grant it the **Tag Manager** roles you need (e.g., "Tag Manager Admin")
-4. Create a JSON key and download it
-5. Place the key at `secrets/service-account.json`
+### For team members
 
-### 2. Enable the Tag Manager API
-
-In GCP Console, enable the **Tag Manager API** for your project.
-
-### 3. Grant GTM Access
-
-In GTM, add the service account email as a user with appropriate permissions on your GTM account/container.
-
-### 4. Build & Run
+Run the shared MCP setup script to add the GTM MCP to your Claude Code config:
 
 ```sh
-npm install
-npm run build
-
-# Direct run (for Claude Code MCP):
-GOOGLE_APPLICATION_CREDENTIALS=./secrets/service-account.json node dist/index.js
-
-# Or via Docker:
-docker compose up --build
+bash /srv/projects/mcps/setup.sh gtm-mcp-server
 ```
 
-### 5. Claude Code Config
-
-Add to `~/.claude/settings.json`:
+Or manually add to `~/.claude/settings.json`:
 
 ```json
 {
   "mcpServers": {
     "gtm-mcp-server": {
       "command": "node",
-      "args": ["/path/to/gtm-mcp/dist/index.js"],
+      "args": ["/home/tay/projects/gtm-mcp/dist/index.js"],
       "env": {
-        "GOOGLE_APPLICATION_CREDENTIALS": "/path/to/gtm-mcp/secrets/service-account.json"
+        "GOOGLE_APPLICATION_CREDENTIALS": "/home/tay/projects/gtm-mcp/secrets/service-account.json"
       }
     }
   }
@@ -54,6 +33,55 @@ Add to `~/.claude/settings.json`:
 ```
 
 Then restart Claude Code or run `/mcp` to reload.
+
+### How it works
+
+MCP stdio servers are spawned by Claude Code on demand — each session gets its own process. There's no persistent server to keep running. The shared build at `/home/tay/projects/gtm-mcp/dist/` is what every session launches from, and the shared service account key provides auth.
+
+### Auto-deploy
+
+Pushes to `main` on `KUHL-HQ/gtm-mcp` trigger the GitHub webhook which:
+1. Pulls the latest code to `/home/tay/projects/gtm-mcp/`
+2. Runs `npm install && npm run build`
+
+New Claude Code sessions will use the updated build automatically.
+
+## Development
+
+### Working on changes
+
+1. Work in your dev clone at `/home/tay/dev/gtm-mcp/`
+2. Create a feature branch
+3. Open a PR — CI must pass (`npx tsc --noEmit`) and 1 approval required
+4. Merge to `main` — auto-deploys to production
+
+### Local dev
+
+```sh
+cd /home/tay/dev/gtm-mcp
+npm install
+npm run build
+
+# Test locally:
+GOOGLE_APPLICATION_CREDENTIALS=./secrets/service-account.json node dist/index.js
+```
+
+## GCP Service Account Setup
+
+1. Go to [GCP Console > IAM > Service Accounts](https://console.cloud.google.com/iam-admin/serviceaccounts)
+2. Create a service account — no special GCP IAM roles needed
+3. Enable the **Tag Manager API** on the project
+4. Create a JSON key and download it to `secrets/service-account.json`
+5. In GTM, add the service account email as a user with **Publish** permission (account level)
+
+## Docker (alternative)
+
+```sh
+npm run build
+docker compose up --build
+```
+
+Mount the service account key via `docker-compose.yml`.
 
 ## Tools
 
