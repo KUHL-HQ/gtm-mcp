@@ -1,14 +1,13 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { tagmanager_v2 } from "googleapis";
 import { z } from "zod";
-import { McpAgentToolParamsModel } from "../models/McpAgentModel";
-import { ClientSchema } from "../schemas/ClientSchema";
+import { ClientSchema } from "../schemas/ClientSchema.js";
 import {
   createErrorResponse,
   getTagManagerClient,
   log,
   paginateArray,
-} from "../utils";
+} from "../utils/index.js";
 import Schema$Client = tagmanager_v2.Schema$Client;
 
 const PayloadSchema = ClientSchema.omit({
@@ -23,7 +22,6 @@ const ITEMS_PER_PAGE = 50;
 
 export const clientActions = (
   server: McpServer,
-  { props }: McpAgentToolParamsModel,
 ): void => {
   server.tool(
     "gtm_client",
@@ -88,7 +86,7 @@ export const clientActions = (
       log(`Running tool: gtm_client with action ${action}`);
 
       try {
-        const tagmanager = await getTagManagerClient(props);
+        const tagmanager = await getTagManagerClient();
 
         switch (action) {
           case "create": {

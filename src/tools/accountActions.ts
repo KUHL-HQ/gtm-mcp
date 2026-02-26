@@ -1,8 +1,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import { McpAgentToolParamsModel } from "../models/McpAgentModel";
-import { AccountSchema } from "../schemas/AccountSchema";
-import { createErrorResponse, getTagManagerClient, log } from "../utils";
+import { AccountSchema } from "../schemas/AccountSchema.js";
+import { createErrorResponse, getTagManagerClient, log } from "../utils/index.js";
 
 const PayloadSchema = AccountSchema.omit({
   accountId: true,
@@ -10,7 +9,6 @@ const PayloadSchema = AccountSchema.omit({
 
 export const accountActions = (
   server: McpServer,
-  { props }: McpAgentToolParamsModel,
 ): void => {
   server.tool(
     "gtm_account",
@@ -30,7 +28,7 @@ export const accountActions = (
       log(`Running tool: gtm_account with action ${action}`);
 
       try {
-        const tagmanager = await getTagManagerClient(props);
+        const tagmanager = await getTagManagerClient();
 
         switch (action) {
           case "get": {

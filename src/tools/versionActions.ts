@@ -1,8 +1,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { tagmanager_v2 } from "googleapis";
 import { z } from "zod";
-import { McpAgentToolParamsModel } from "../models/McpAgentModel";
-import { ContainerVersionSchema } from "../schemas/ContainerVersionSchema";
+import { ContainerVersionSchema } from "../schemas/ContainerVersionSchema.js";
 import {
   createErrorResponse,
   getTagManagerClient,
@@ -10,7 +9,7 @@ import {
   log,
   processVersionData,
   ResourceType,
-} from "../utils";
+} from "../utils/index.js";
 import Schema$ContainerVersion = tagmanager_v2.Schema$ContainerVersion;
 
 const PayloadSchema = ContainerVersionSchema.omit({
@@ -21,7 +20,6 @@ const PayloadSchema = ContainerVersionSchema.omit({
 
 export const versionActions = (
   server: McpServer,
-  { props }: McpAgentToolParamsModel,
 ): void => {
   server.tool(
     "gtm_version",
@@ -117,7 +115,7 @@ export const versionActions = (
       log(`Running tool: gtm_version with action ${action}`);
 
       try {
-        const tagmanager = await getTagManagerClient(props);
+        const tagmanager = await getTagManagerClient();
 
         switch (action) {
           case "get": {

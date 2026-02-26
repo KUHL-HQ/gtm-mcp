@@ -1,52 +1,29 @@
-import { OAuthProvider } from "@cloudflare/workers-oauth-provider";
+#!/usr/bin/env node
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { McpAgent } from "agents/mcp";
-import { McpAgentPropsModel } from "./models/McpAgentModel";
-import { tools } from "./tools";
-import {
-  apisHandler,
-  getPackageVersion,
-  handleTokenExchangeCallback,
-} from "./utils";
+import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+import { tools } from "./tools/index.js";
+import { getPackageVersion } from "./utils/getPackageVersion.js";
+import { loadEnv } from "./utils/loadEnv.js";
+import { log } from "./utils/log.js";
 
-export class GoogleTagManagerMCPServer extends McpAgent<
-  Env,
-  null,
-  McpAgentPropsModel
-> {
-  server = new McpServer({
-    name: "google-tag-manager-mcp-server",
-    version: getPackageVersion(),
-    protocolVersion: "1.0",
-    vendor: "stape-io",
-    homepage: "https://github.com/stape-io/google-tag-manager-mcp-server",
-  });
+loadEnv();
 
-  async init() {
-    tools.forEach((register) => {
-      // @ts-ignore
-      register(this.server, { props: this.props, env: this.env });
-    });
-  }
+const server = new McpServer({
+  name: "gtm-mcp-server",
+  version: getPackageVersion(),
+});
+
+tools.forEach((register) => {
+  register(server);
+});
+
+async function main() {
+  const transport = new StdioServerTransport();
+  await server.connect(transport);
+  log("GTM MCP server running on stdio");
 }
 
-export default {
-  async fetch(request: Request, env: Env, ctx: ExecutionContext) {
-    const provider = new OAuthProvider({
-      apiRoute: ["/sse", "/mcp"],
-      apiHandlers: {
-        "/sse": GoogleTagManagerMCPServer.serveSSE("/sse"),
-        "/mcp": GoogleTagManagerMCPServer.serve("/mcp"),
-      },
-      // @ts-ignore
-      defaultHandler: apisHandler,
-      authorizeEndpoint: "/authorize",
-      tokenEndpoint: "/token",
-      clientRegistrationEndpoint: "/register",
-      tokenExchangeCallback: async (options) => {
-        return handleTokenExchangeCallback(options, env);
-      },
-    });
-    return provider.fetch(request, env, ctx);
-  },
-};
+main().catch((error) => {
+  console.error("Fatal error:", error);
+  process.exit(1);
+});

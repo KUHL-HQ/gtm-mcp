@@ -1,16 +1,15 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { tagmanager_v2 } from "googleapis";
 import { z } from "zod";
-import { McpAgentToolParamsModel } from "../models/McpAgentModel";
-import { CombineConfigSchema } from "../schemas/CombineConfigSchema";
-import { ContainerSchema } from "../schemas/ContainerSchema";
-import { MoveTagIdConfigSchema } from "../schemas/MoveTagIdConfigSchema";
+import { CombineConfigSchema } from "../schemas/CombineConfigSchema.js";
+import { ContainerSchema } from "../schemas/ContainerSchema.js";
+import { MoveTagIdConfigSchema } from "../schemas/MoveTagIdConfigSchema.js";
 import {
   createErrorResponse,
   getTagManagerClient,
   log,
   paginateArray,
-} from "../utils";
+} from "../utils/index.js";
 import Schema$Container = tagmanager_v2.Schema$Container;
 
 const ContainerPayloadSchema = ContainerSchema.omit({
@@ -32,7 +31,6 @@ const ITEMS_PER_PAGE = 50;
 
 export const containerActions = (
   server: McpServer,
-  { props }: McpAgentToolParamsModel,
 ): void => {
   server.tool(
     "gtm_container",
@@ -114,7 +112,7 @@ export const containerActions = (
       log(`Running tool: gtm_container with action ${action}`);
 
       try {
-        const tagmanager = await getTagManagerClient(props);
+        const tagmanager = await getTagManagerClient();
 
         switch (action) {
           case "create": {

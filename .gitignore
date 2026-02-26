@@ -179,7 +179,9 @@ dist
 .yarn/install-state.gz
 .pnp.\*
 
-# wrangler project
+# Secrets (service account keys)
+secrets/
 
+# wrangler project (legacy)
 .dev.vars
 .wrangler/

@@ -1,44 +1,85 @@
-# MCP Server for Google Tag Manager
-[![Trust Score](https://archestra.ai/mcp-catalog/api/badge/quality/stape-io/google-tag-manager-mcp-server)](https://archestra.ai/mcp-catalog/stape-io__google-tag-manager-mcp-server)
+# GTM MCP Server (Self-Hosted)
 
-This is a server that supports remote MCP connections, with Google OAuth built-in and provides an interface to the Google Tag Manager API.
+Self-hosted MCP server for Google Tag Manager. Forked from [Stape's GTM MCP](https://github.com/stape-io/google-tag-manager-mcp-server) and converted from Cloudflare Workers to a standard Node.js stdio server with GCP service account auth.
 
+All GTM API calls go directly to Google — no third-party proxy.
 
-## Access the remote MCP server from Claude Desktop
+## Setup
 
-Open Claude Desktop and navigate to Settings -> Developer -> Edit Config. This opens the configuration file that controls which MCP servers Claude can access.
+### 1. Create a GCP Service Account
 
-Replace the content with the following configuration. Once you restart Claude Desktop, a browser window will open showing your OAuth login page. Complete the authentication flow to grant Claude access to your MCP server. After you grant access, the tools will become available for you to use.
+1. Go to [GCP Console > IAM > Service Accounts](https://console.cloud.google.com/iam-admin/serviceaccounts)
+2. Create a service account (or use an existing one)
+3. Grant it the **Tag Manager** roles you need (e.g., "Tag Manager Admin")
+4. Create a JSON key and download it
+5. Place the key at `secrets/service-account.json`
+
+### 2. Enable the Tag Manager API
+
+In GCP Console, enable the **Tag Manager API** for your project.
+
+### 3. Grant GTM Access
+
+In GTM, add the service account email as a user with appropriate permissions on your GTM account/container.
+
+### 4. Build & Run
+
+```sh
+npm install
+npm run build
+
+# Direct run (for Claude Code MCP):
+GOOGLE_APPLICATION_CREDENTIALS=./secrets/service-account.json node dist/index.js
+
+# Or via Docker:
+docker compose up --build
+```
+
+### 5. Claude Code Config
+
+Add to `~/.claude/settings.json`:
 
 ```json
 {
   "mcpServers": {
     "gtm-mcp-server": {
-      "command": "npx",
-      "args": [
-        "-y",
-        "mcp-remote",
-        "https://gtm-mcp.stape.ai/mcp"
-      ]
+      "command": "node",
+      "args": ["/path/to/gtm-mcp/dist/index.js"],
+      "env": {
+        "GOOGLE_APPLICATION_CREDENTIALS": "/path/to/gtm-mcp/secrets/service-account.json"
+      }
     }
   }
 }
 ```
 
-### Troubleshooting
+Then restart Claude Code or run `/mcp` to reload.
 
-**MCP Server Name Length Limit**
+## Tools
 
-Some MCP clients (like Cursor AI) have a 60-character limit for the combined MCP server name + tool name length. If you use a longer server name in your configuration (e.g., `gtm-mcp-server-your-additional-long-name`), some tools may be filtered out.
+18 MCP tools covering the full GTM API v2:
 
-To avoid this issue:
-- Use shorter server names in your MCP configuration (e.g., `gtm-mcp-server`)
+| Tool | Operations |
+|------|------------|
+| `gtm_account` | get, list, update |
+| `gtm_container` | create, get, list, update, remove, combine, lookup, moveTagId, snippet |
+| `gtm_workspace` | create, get, list, update, remove, sync, getStatus, createVersion, quickPreview |
+| `gtm_tag` | create, get, list, update, remove, revert |
+| `gtm_trigger` | create, get, list, update, remove, revert |
+| `gtm_variable` | create, get, list, update, remove, revert |
+| `gtm_built_in_variable` | create, list, remove, revert |
+| `gtm_folder` | create, get, list, update, remove, moveEntitiesToFolder, revert |
+| `gtm_template` | create, get, list, update, remove, revert |
+| `gtm_client` | create, get, list, update, remove, revert |
+| `gtm_transformation` | create, get, list, update, remove, revert |
+| `gtm_environment` | create, get, list, update, remove, reauthorize |
+| `gtm_version` | get, live, publish, remove, setLatest, undelete, update |
+| `gtm_version_header` | list, latest |
+| `gtm_zone` | create, get, list, update, remove, revert |
+| `gtm_user_permission` | create, get, list, update, remove |
+| `gtm_destination` | get, list, link |
+| `gtm_gtag_config` | create, get, list, update, remove |
 
-**Clearing MCP Cache**
+## License
 
-[mcp-remote](https://github.com/geelen/mcp-remote#readme) stores all the credential information inside ~/.mcp-auth (or wherever your MCP_REMOTE_CONFIG_DIR points to). If you're having persistent issues, try running:
-You can run rm -rf ~/.mcp-auth to clear any locally stored state and tokens.
-```
-rm -rf ~/.mcp-auth
-```
-Then restarting your MCP client.
+Apache-2.0 (forked from [stape-io/google-tag-manager-mcp-server](https://github.com/stape-io/google-tag-manager-mcp-server))

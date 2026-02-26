@@ -1,29 +1,34 @@
 import { google } from "googleapis";
-import { log } from "./log";
-import { Props } from "./authorizeUtils";
+import { GoogleAuth } from "google-auth-library";
+import { log } from "./log.js";
 
 type TagManagerClient = ReturnType<typeof google.tagmanager>;
 
-export async function getTagManagerClient(
-  props: Props,
-): Promise<TagManagerClient> {
-  const token = props.accessToken;
+let cachedAuth: GoogleAuth | null = null;
 
-  if (props.expiresAt) {
-    const now = Math.floor(Date.now() / 1000);
-    if (now >= props.expiresAt) {
-      throw new Error(
-        "Access token expired. Please refresh your connection or re-authenticate.",
-      );
-    }
+function getAuth(): GoogleAuth {
+  if (!cachedAuth) {
+    cachedAuth = new GoogleAuth({
+      scopes: [
+        "https://www.googleapis.com/auth/tagmanager.edit.containers",
+        "https://www.googleapis.com/auth/tagmanager.edit.containerversions",
+        "https://www.googleapis.com/auth/tagmanager.manage.accounts",
+        "https://www.googleapis.com/auth/tagmanager.manage.users",
+        "https://www.googleapis.com/auth/tagmanager.publish",
+        "https://www.googleapis.com/auth/tagmanager.readonly",
+        "https://www.googleapis.com/auth/tagmanager.delete.containers",
+      ],
+    });
   }
+  return cachedAuth;
+}
 
+export async function getTagManagerClient(): Promise<TagManagerClient> {
   try {
+    const auth = getAuth();
     return google.tagmanager({
       version: "v2",
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
+      auth: auth as any,
     });
   } catch (error) {
     log("Error creating Tag Manager client:", error);

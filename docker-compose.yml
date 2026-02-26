@@ -1,0 +1,10 @@
+services:
+  gtm-mcp:
+    build: .
+    container_name: gtm-mcp
+    environment:
+      - GOOGLE_APPLICATION_CREDENTIALS=/secrets/service-account.json
+    volumes:
+      - ./secrets/service-account.json:/secrets/service-account.json:ro
+    stdin_open: true
+    restart: unless-stopped

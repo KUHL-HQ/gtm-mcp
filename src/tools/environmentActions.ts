@@ -1,14 +1,13 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { tagmanager_v2 } from "googleapis";
 import { z } from "zod";
-import { McpAgentToolParamsModel } from "../models/McpAgentModel";
-import { EnvironmentSchema } from "../schemas/EnvironmentSchema";
+import { EnvironmentSchema } from "../schemas/EnvironmentSchema.js";
 import {
   createErrorResponse,
   getTagManagerClient,
   log,
   paginateArray,
-} from "../utils";
+} from "../utils/index.js";
 import Schema$Environment = tagmanager_v2.Schema$Environment;
 
 const PayloadSchema = EnvironmentSchema.omit({
@@ -22,7 +21,6 @@ const ITEMS_PER_PAGE = 50;
 
 export const environmentActions = (
   server: McpServer,
-  { props }: McpAgentToolParamsModel,
 ): void => {
   server.tool(
     "gtm_environment",
@@ -86,7 +84,7 @@ export const environmentActions = (
     }) => {
       log(`Running tool: gtm_environment with action ${action}`);
       try {
-        const tagmanager = await getTagManagerClient(props);
+        const tagmanager = await getTagManagerClient();
         switch (action) {
           case "create": {
             if (!createOrUpdateConfig) {
